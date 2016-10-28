@@ -21,25 +21,54 @@
 */
 
 import UIKit
+// FIXME: comparison operators with optionals were removed from the Swift Standard Libary.
+// Consider refactoring the code to use the non-optional operators.
+fileprivate func < <T : Comparable>(lhs: T?, rhs: T?) -> Bool {
+  switch (lhs, rhs) {
+  case let (l?, r?):
+    return l < r
+  case (nil, _?):
+    return true
+  default:
+    return false
+  }
+}
+
+// FIXME: comparison operators with optionals were removed from the Swift Standard Libary.
+// Consider refactoring the code to use the non-optional operators.
+fileprivate func > <T : Comparable>(lhs: T?, rhs: T?) -> Bool {
+  switch (lhs, rhs) {
+  case let (l?, r?):
+    return l > r
+  default:
+    return rhs < lhs
+  }
+}
+
 
 protocol JMBarGraphDelegate: class
 {
-    func barSelectedWithValue(value: Int, index: Int)
+    func barSelectedWithValue(_ value: Int, index: Int)
 }
 
 class JMScrollingBarGraph: UIView, UIScrollViewDelegate
 {
-    private var barColor: UIColor! = UIColor.whiteColor()
-    private var barCount: CGFloat! = 0.0
-    private var barGraphDataTotalWidth: CGFloat! = 0.0
-    private var barGraphLayerArray: NSMutableArray!
-    private var barHighlightColor: UIColor! = UIColor.lightGrayColor()
-    private var barWidth: CGFloat! = 10.0 // Default Bar Width
-    private var dataArray: Array<CGFloat>! = Array()
-    private var draggingIndex: CGFloat! = 0.0
-    private var largestDataValue: CGFloat! = 0
-    private var scrollView: UIScrollView!
-    private var scrollContentView: UIView!
+    private lazy var __once: () = {
+                            self.showGraphScroll()
+                        }()
+    fileprivate var barColor: UIColor! = UIColor.white
+    fileprivate var barCount: CGFloat! = 0.0
+    fileprivate var barGraphDataTotalWidth: CGFloat! = 0.0
+    fileprivate var barGraphLayerArray: NSMutableArray!
+    fileprivate var barHighlightColor: UIColor! = UIColor.lightGray
+    fileprivate var barWidth: CGFloat! = 10.0 // Default Bar Width
+    fileprivate var dataArray: Array<CGFloat>! = Array()
+    fileprivate var draggingIndex: CGFloat! = 0.0
+    fileprivate var largestDataValue: CGFloat! = 0
+    fileprivate var scrollView: UIScrollView!
+    fileprivate var scrollContentView: UIView!
+    fileprivate var demoForUser: Bool = false
+    fileprivate var demoToken: Int = 0
     
     weak var delegate: JMBarGraphDelegate?
     
@@ -48,15 +77,15 @@ class JMScrollingBarGraph: UIView, UIScrollViewDelegate
     override init(frame: CGRect)
     {
         super.init(frame: frame)
-        scrollView = UIScrollView(frame: CGRectMake(0, 0, frame.size.width, frame.size.height))
+        scrollView = UIScrollView(frame: CGRect(x: 0, y: 0, width: frame.size.width, height: frame.size.height))
         scrollView.delegate = self
-        scrollView.backgroundColor = UIColor.whiteColor()
+        scrollView.backgroundColor = UIColor.white
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.showsVerticalScrollIndicator = false
         addSubview(scrollView)
         
         scrollContentView = UIView()
-        scrollContentView.backgroundColor = UIColor.clearColor()
+        scrollContentView.backgroundColor = UIColor.clear
         scrollView.addSubview(scrollContentView)
         
         barGraphLayerArray = NSMutableArray()
@@ -64,30 +93,42 @@ class JMScrollingBarGraph: UIView, UIScrollViewDelegate
 
     required init?(coder aDecoder: NSCoder)
     {
-        fatalError("init(coder:) has not been implemented")
+        super.init(coder: aDecoder)
+        scrollView = UIScrollView(frame: CGRect.zero)
+        scrollView.delegate = self
+        scrollView.backgroundColor = UIColor.scBarGraphBackgroundBlue()
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.showsVerticalScrollIndicator = false
+        addSubview(scrollView)
+        
+        scrollContentView = UIView()
+        scrollContentView.backgroundColor = UIColor.clear
+        scrollView.addSubview(scrollContentView)
+        
+        barGraphLayerArray = NSMutableArray()
     }
     
-    func layoutScrollview()
+    override func layoutSubviews()
     {
         // Set ScrollView Size
         scrollView.frame = CGRect(x: 0, y: 0, width: self.frame.size.width, height: self.frame.size.height)
         
         // Set Content Size
-        scrollView.contentSize = CGSizeMake(scrollView.frame.size.width + barGraphDataTotalWidth, scrollView.frame.size.height)
+        scrollView.contentSize = CGSize(width: scrollView.frame.size.width + barGraphDataTotalWidth, height: scrollView.frame.size.height)
         
         // Set ContentView Size
-        scrollContentView.frame = CGRectMake(scrollView.frame.size.width/2.0,
-            0,
-            barGraphDataTotalWidth,
-            scrollView.bounds.size.height)
+        scrollContentView.frame = CGRect(x: scrollView.frame.size.width/2.0,
+            y: 0,
+            width: barGraphDataTotalWidth,
+            height: scrollView.bounds.size.height)
 
         // Offset Everything In Order To Scroll Right
-        scrollView.contentOffset = CGPointMake(barGraphDataTotalWidth, 0)
+        scrollView.contentOffset = CGPoint(x: barGraphDataTotalWidth, y: 0)
     }
     
     // MARK: Set Data With Array
     
-    func setBarDataWithArray(array: Array<CGFloat>)
+    func setBarDataWithArray(_ array: Array<CGFloat>)
     {
         dataArray = array
         
@@ -100,42 +141,42 @@ class JMScrollingBarGraph: UIView, UIScrollViewDelegate
         
         barCount =  CGFloat(dataArray.count)
         barGraphDataTotalWidth = (barCount * barWidth) + barCount
-        layoutScrollview()
+        layoutSubviews()
     }
     
     // MARK: Set Bar Width
     
-    func setGraphBarWidth(newWidth: Int)
+    func setGraphBarWidth(_ newWidth: Int)
     {
         barWidth = CGFloat(newWidth)
         barGraphDataTotalWidth = (barCount * barWidth) + barCount
-        layoutScrollview()
+        layoutSubviews()
     }
     
     // MARK: Set Bar Color
     
-    func setBarColorTo(color: UIColor)
+    func setBarColorTo(_ color: UIColor)
     {
         barColor = color
     }
     
     // MARK: Set Bar Highlight Color
     
-    func setBarHighlightColorTo(color: UIColor)
+    func setBarHighlightColorTo(_ color: UIColor)
     {
         barHighlightColor = color
     }
     
     // MARK: Set Background Color 
     
-    func setGraphBackgroundColorTo(color: UIColor)
+    func setGraphBackgroundColorTo(_ color: UIColor)
     {
         scrollView.backgroundColor = color
     }
     
     // MARK: Load Graph Data
     
-    func loadGraphDataWithAnimation(animate: Bool)
+    func loadGraphDataWithAnimation(_ animate: Bool)
     {
         barGraphLayerArray.removeAllObjects()
         scrollContentView.layer.sublayers = nil
@@ -149,21 +190,21 @@ class JMScrollingBarGraph: UIView, UIScrollViewDelegate
             let heightOfCurrentBar: CGFloat = (largestDataValue > 0) ? CGFloat(barData)/largestDataValue * heightOfLargestValuePossible + 2 : 2
             // Index x Width Then Subtract Half of Width To Center
             let barLocationOffset: CGFloat = barIndex * barWidth + barIndex
-            barLayer.frame = CGRectMake(barLocationOffset,
-                scrollContentView.frame.size.height - heightOfCurrentBar,
-                barWidth,
-                heightOfCurrentBar)
-            barLayer.strokeColor = barColor.CGColor
+            barLayer.frame = CGRect(x: barLocationOffset,
+                y: scrollContentView.frame.size.height - heightOfCurrentBar,
+                width: barWidth,
+                height: heightOfCurrentBar)
+            barLayer.strokeColor = barColor.cgColor
             barLayer.lineWidth = barWidth
             
             let barPath = UIBezierPath()
-            barPath.moveToPoint(CGPointMake(0 + barWidth/2.0, barLayer.frame.size.height))
-            barPath.addLineToPoint(CGPointMake(0 + barWidth/2.0, 0))
-            barLayer.path = barPath.CGPath
+            barPath.move(to: CGPoint(x: 0 + barWidth/2.0, y: barLayer.frame.size.height))
+            barPath.addLine(to: CGPoint(x: 0 + barWidth/2.0, y: 0))
+            barLayer.path = barPath.cgPath
             
-            barGraphLayerArray.addObject(barLayer)
+            barGraphLayerArray.add(barLayer)
             scrollContentView.layer.addSublayer(barLayer)
-            barIndex++
+            barIndex += 1
             
             // Animate Drawing Of Each Line
             if animate {
@@ -171,31 +212,31 @@ class JMScrollingBarGraph: UIView, UIScrollViewDelegate
                 pathAnimation.duration = 0.5
                 pathAnimation.fromValue = 0.0
                 pathAnimation.toValue = 1.0
-                barLayer.addAnimation(pathAnimation, forKey: "strokeEnd")
+                barLayer.add(pathAnimation, forKey: "strokeEnd")
             } else {
-                barLayer.backgroundColor = barColor.CGColor
+                barLayer.backgroundColor = barColor.cgColor
             }
         }
-        snapToBar()
+        snapToBar(animate)
     }
     
     // MARK: ScrollView Delegate Methods
     
-    func scrollViewDidEndDragging(scrollView: UIScrollView, willDecelerate decelerate: Bool)
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool)
     {
         if !decelerate {
             // ScrollView Ended Dragging Without Scrolling Further
-            snapToBar()
+            snapToBar(false)
         }
     }
     
-    func scrollViewDidEndDecelerating(scrollView: UIScrollView)
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView)
     {
         // Called After Drag & Scrolled To Stop
-        snapToBar()
+        snapToBar(false)
     }
     
-    func scrollViewDidScroll(scrollView: UIScrollView)
+    func scrollViewDidScroll(_ scrollView: UIScrollView)
     {
         if dataArray.count > 0 {
             let currentXOffset = scrollView.contentOffset.x
@@ -209,17 +250,17 @@ class JMScrollingBarGraph: UIView, UIScrollViewDelegate
             
             // Change Colors of Bars While Dragging
             if (barGraphLayerArray != nil && barGraphLayerArray.count > 0) {
-                if scrollView.dragging {
+                if scrollView.isDragging || demoForUser {
                     if closestBarIndex != draggingIndex {
                         let resetBarLayer = barGraphLayerArray[Int(draggingIndex)] as! CAShapeLayer
-                        let dispatchTime: dispatch_time_t = dispatch_time(DISPATCH_TIME_NOW, Int64(0.1 * Double(NSEC_PER_SEC)))
-                        dispatch_after(dispatchTime, dispatch_get_main_queue(), {
+                        let dispatchTime: DispatchTime = DispatchTime.now() + Double(Int64(0.1 * Double(NSEC_PER_SEC))) / Double(NSEC_PER_SEC)
+                        DispatchQueue.main.asyncAfter(deadline: dispatchTime, execute: {
                             self.resetHighlightColor(resetBarLayer)
                         })
                         draggingIndex = closestBarIndex
                         
                         let highlightBarLayer = barGraphLayerArray[Int(closestBarIndex)] as! CAShapeLayer
-                        highlightBarLayer.strokeColor = barHighlightColor.CGColor
+                        highlightBarLayer.strokeColor = barHighlightColor.cgColor
                     }
                 }
             }
@@ -228,7 +269,7 @@ class JMScrollingBarGraph: UIView, UIScrollViewDelegate
     
     // MARK: Snap To Nearest Bar
     
-    private func snapToBar()
+    fileprivate func snapToBar(_ showDemo: Bool)
     {
         if dataArray.count > 0 {
             let currentXOffset = scrollView.contentOffset.x
@@ -240,12 +281,17 @@ class JMScrollingBarGraph: UIView, UIScrollViewDelegate
                 del.barSelectedWithValue(value, index: currentIndex)
             }
             
-            UIView.animateWithDuration(0.2, animations: { () -> Void in
-                self.scrollView.contentOffset = CGPointMake(closestBarIndex * self.barWidth + closestBarIndex + self.barWidth/2.0, 0)
-                }) { (complete) -> Void in
+            UIView.animate(withDuration: 0.2, animations: { () -> Void in
+                    self.scrollView.contentOffset = CGPoint(x: closestBarIndex * self.barWidth + closestBarIndex + self.barWidth/2.0, y: 0)
+                }, completion: { (complete) -> Void in
                     let highlightBarLayer = self.barGraphLayerArray[Int(closestBarIndex)] as! CAShapeLayer
                     self.resetHighlightColor(highlightBarLayer)
-            }
+                    
+                    if (showDemo) {
+                        // Only Show Demo Once
+                        _ = self.__once
+                    }
+            }) 
         } else {
             // Return 0, Most Recent For No Data
             if let del = delegate {
@@ -254,10 +300,63 @@ class JMScrollingBarGraph: UIView, UIScrollViewDelegate
         }
     }
     
+    // MARK: Show Graph Scrolls To User
+    
+    fileprivate func showGraphScroll()
+    {
+        if dataArray.count > 3 {
+            let currentXOffset = scrollView.contentOffset.x
+            let startBarIndex = CGFloat(max(min(Int(floor(currentXOffset / (barWidth + 1))), dataArray.count - 1), 0))
+            let scrollToBar1 = startBarIndex - 1
+            let scrollToBar2 = startBarIndex - 2
+            
+            self.demoForUser = true
+            UIView.animate(withDuration: 0.4, delay: 0.5, options: UIViewAnimationOptions(), animations: { () -> Void in
+                self.scrollView.contentOffset = CGPoint(x: scrollToBar1 * self.barWidth + scrollToBar1 + self.barWidth/2.0, y: 0)
+            }) { (complete) -> Void in
+                let value = Int(self.dataArray[Int(scrollToBar1)])
+                if let del = self.delegate {
+                    del.barSelectedWithValue(value, index: Int(scrollToBar1))
+                }
+                
+                UIView.animate(withDuration: 0.4, animations: { () -> Void in
+                    self.scrollView.contentOffset = CGPoint(x: scrollToBar2 * self.barWidth + scrollToBar2 + self.barWidth/2.0, y: 0)
+                }, completion: { (complete) -> Void in
+                    let value = Int(self.dataArray[Int(scrollToBar2)])
+                    if let del = self.delegate {
+                        del.barSelectedWithValue(value, index: Int(scrollToBar2))
+                    }
+                    
+                    UIView.animate(withDuration: 0.4, animations: { () -> Void in
+                        self.scrollView.contentOffset = CGPoint(x: scrollToBar1 * self.barWidth + scrollToBar1 + self.barWidth/2.0, y: 0)
+                    }, completion: { (complete) -> Void in
+                        let value = Int(self.dataArray[Int(scrollToBar1)])
+                        if let del = self.delegate {
+                            del.barSelectedWithValue(value, index: Int(scrollToBar1))
+                        }
+                        
+                        UIView.animate(withDuration: 0.4, animations: { () -> Void in
+                            self.scrollView.contentOffset = CGPoint(x: startBarIndex * self.barWidth + startBarIndex + self.barWidth/2.0, y: 0)
+                        }, completion: { (complete) -> Void in
+                            let value = Int(self.dataArray[Int(startBarIndex)])
+                            if let del = self.delegate {
+                                del.barSelectedWithValue(value, index: Int(startBarIndex))
+                            }
+                        
+                            let highlightBarLayer = self.barGraphLayerArray[Int(startBarIndex)] as! CAShapeLayer
+                            self.resetHighlightColor(highlightBarLayer)
+                            self.demoForUser = false
+                        }) 
+                    }) 
+                }) 
+            }
+        }
+    }
+    
     // MARK: Reset Highlight Color
     
-    private func resetHighlightColor(layer: CAShapeLayer)
+    fileprivate func resetHighlightColor(_ layer: CAShapeLayer)
     {
-        layer.strokeColor = barColor.CGColor
+        layer.strokeColor = barColor.cgColor
     }
 }
